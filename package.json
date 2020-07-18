@@ -1,0 +1,41 @@
+{
+  "name": "party-radio-engine",
+  "version": "1.0.0",
+  "description": "Online Realtime Media Music Video Aggregator Radio Flux Manager",
+  "main": "app.js",
+  "scripts": {
+    "start": "node app.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/clemeno/party-radio-engine.git"
+  },
+  "keywords": [
+    "Online",
+    "Realtime",
+    "Media",
+    "Music",
+    "Video",
+    "Aggregator",
+    "Radio",
+    "Flux",
+    "Manager"
+  ],
+  "author": "CLEm",
+  "license": "GPL-3.0",
+  "bugs": {
+    "url": "https://github.com/clemeno/party-radio-engine/issues"
+  },
+  "homepage": "https://github.com/clemeno/party-radio-engine#readme",
+  "dependencies": {
+    "fastify": "^3.1.1",
+    "fastify-cli": "^2.0.2",
+    "fastify-static": "^3.1.0",
+    "moment-timezone": "^0.5.31"
+  },
+  "devDependencies": {
+    "standard": "^14.3.4",
+    "tap": "^14.10.7"
+  }
+}

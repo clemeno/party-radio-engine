@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+  <head>
+    <meta charset="UTF-8">
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0"
+    >
+    <title>SpiRadio</title>
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css?family=Roboto:300,400,500,700,400italic|Material+Icons"
+    >
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/vue-material/dist/vue-material.min.css"
+    >
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/vue-material/dist/theme/default.css"
+    >
+    <style>
+
+    </style>
+  </head>
+
+  <body>
+
+    <div id="app">
+
+      <h1>SpiRadio</h1>
+
+      <div>
+        <h2>Now Playing</h2>
+        <h3>Radio</h3>
+        <h3>Perso</h3>
+      </div>
+
+      <div>
+        <h2>Flux</h2>
+      </div>
+
+      <div>
+        <h2>Player</h2>
+
+      </div>
+
+    </div>
+
+    <script src="https://unpkg.com/vue"></script>
+    <script src="https://unpkg.com/vue-material"></script>
+    <script>Vue.use( VueMaterial.default )</script>
+    <script>
+      Vue.material = {
+        ...Vue.material,
+
+        // activeness of ripple effect
+        ripple: true,
+
+        theming: {},
+        locale: {
+          ...Vue.material.locale,
+
+          // range for datepicker
+          startYear: 1900,
+          endYear: 2099,
+
+          // date format for date picker
+          dateFormat: 'yyyy-MM-dd',
+
+          // `0` stand for Sunday, `1` stand for Monday
+          firstDayOfAWeek: 1
+        }
+      }
+    </script>
+
+    <script>
+      new Vue( {
+        el: '#app'
+      } )
+    </script>
+  </body>
+
+</html>
