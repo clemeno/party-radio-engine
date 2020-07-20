@@ -1,7 +1,7 @@
 module.exports = {
   apps: [
     {
-      name: 'party-radio-engine',
+      name: 'p-r-e',
       script: 'server.js',
       args: '',
       watch: false,

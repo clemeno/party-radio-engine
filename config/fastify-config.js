@@ -30,7 +30,7 @@ module.exports = {
   logger: {
     prettyPrint: { translateTime: 'SYS:standard' },
     level,
-    file: path.join(__dirname, '..', `${level}.log`),
+    file: path.join(__dirname, '..', 'var', 'logs', `${level}.log`),
     // prevent se fields from being logged
     redact: ['req.headers.authorization'],
     serializers: {
