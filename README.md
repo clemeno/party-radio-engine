@@ -29,3 +29,10 @@ npm run test
 ```
 npm run dev
 ```
+
+## Local Web Peer Access
+
+**Browser**
+```
+127.0.0.1:43210/spiradio
+```
