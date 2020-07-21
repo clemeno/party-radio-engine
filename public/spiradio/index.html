@@ -33,8 +33,20 @@
 
       <div>
         <h2>Now Playing</h2>
-        <h3>Radio</h3>
-        <h3>Perso</h3>
+        <div>
+          <h3>Radio</h3>
+          <md-button class="md-icon-button md-dense md-primary">
+            <md-icon>play_arrow</md-icon>
+          </md-button>
+        </div>
+        <div>{{ radio.currentTitleDisplay }}</div>
+        <div>
+          <h3>Perso</h3>
+          <md-button class="md-icon-button md-dense md-primary">
+            <md-icon>play_arrow</md-icon>
+          </md-button>
+        </div>
+        <div>{{ perso.currentTitleDisplay }}</div>
       </div>
 
       <div>
@@ -43,7 +55,33 @@
 
       <div>
         <h2>Player</h2>
-
+        <div>
+          <div>
+            <md-button class="md-icon-button md-dense md-primary">
+              <md-icon>skip_previous</md-icon>
+            </md-button>
+            <md-button class="md-icon-button md-dense md-primary">
+              <md-icon>play_arrow</md-icon>
+            </md-button>
+            <md-button class="md-icon-button md-dense md-primary">
+              <md-icon>pause</md-icon>
+            </md-button>
+            <md-button class="md-icon-button md-dense md-primary">
+              <md-icon>stop</md-icon>
+            </md-button>
+            <md-button class="md-icon-button md-dense md-primary">
+              <md-icon>skip_next</md-icon>
+            </md-button>
+          </div>
+          <div>
+            <md-button class="md-icon-button md-dense md-primary">
+              <md-icon>volume_up</md-icon>
+            </md-button>
+            <md-button class="md-icon-button md-dense md-primary">
+              <md-icon>volume_off</md-icon>
+            </md-button>
+          </div>
+        </div>
       </div>
 
     </div>
@@ -77,7 +115,22 @@
 
     <script>
       new Vue( {
-        el: '#app'
+        el: '#app',
+        data: {
+          bRadio: true,
+          radio: {
+            currentTitleDisplay: ''
+          },
+          perso: {
+            currentTitleDisplay: ''
+          },
+          flux: {
+
+          },
+          player: {
+
+          }
+        }
       } )
     </script>
   </body>

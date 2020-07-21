@@ -50,7 +50,8 @@ module.exports = (fastify, opts, next) => {
   api.map(s => require(`./controller/${s}-controller`)[`${s}Controller`]).forEach(c => fastify.register(c))
 
   // SERVED STATIC FILES
-  fastify.register(require('fastify-static'), require('./config/fastify-static-config'))
+  const fastifyStatic = require('fastify-static')
+  fastify.register(fastifyStatic, require('./config/fastify-static-spiradio-config'))
 
   const { ppid, pid } = process
   const initLog = { started: [moment().format(), TZ, LOCALE, { ppid, pid }] }
