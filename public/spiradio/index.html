@@ -84,7 +84,29 @@
         </div>
       </div>
 
+      <div>
+        <h2>Online</h2>
+
+      </div>
+
+      <div>
+        <h2>Chat</h2>
+        <textarea
+          v-model="chat.messagesDisplay"
+          rows="20"
+          cols="80"
+        ></textarea>
+        <input
+          v-on:keyup.enter="sendMessage"
+          v-model="chat.message"
+          type="text"
+          placeholder="Message"
+        >
+      </div>
+
     </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.3.0/socket.io.js"></script>
 
     <script src="https://unpkg.com/vue"></script>
     <script src="https://unpkg.com/vue-material"></script>
@@ -117,6 +139,7 @@
       new Vue( {
         el: '#app',
         data: {
+          socket: null,
           bRadio: true,
           radio: {
             currentTitleDisplay: ''
@@ -129,7 +152,32 @@
           },
           player: {
 
+          },
+          online: {
+            users: []
+          },
+          chat: {
+            messages: [],
+            messagesDisplay: '',
+            message: ''
           }
+        },
+        created: function() {
+          this.socket = io()
+        },
+        methods: {
+          sendMessage: function() {
+            // this.socket.emit( 'CHAT_MESSAGE', this.chat.message )
+            this.chat.messages.push( `${this.chat.message || ''}`.trim() )
+            this.chat.message = ''
+            if ( 10000 < this.chat.messages.length ) {
+              this.chat.messages.splice( 0, 1 )
+            }
+            this.chat.messagesDisplay = this.chat.messages.join( '\n' )
+          }
+        },
+        destroyed: function() {
+
         }
       } )
     </script>
