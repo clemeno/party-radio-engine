@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="en">
 
   <head>
     <meta charset="UTF-8">
@@ -21,6 +21,9 @@
       href="https://unpkg.com/vue-material/dist/theme/default.css"
     >
     <style>
+      .submissions {
+        font-family: monospace;
+      }
 
     </style>
   </head>
@@ -89,24 +92,23 @@
 
       </div>
 
-      <div>
-        <h2>Chat</h2>
-        <textarea
-          v-model="chat.messagesDisplay"
-          rows="20"
-          cols="80"
-        ></textarea>
+      <div class="submissions">
+        <h2>Submit as {{ uuid }}</h2>
         <input
-          v-on:keyup.enter="sendMessage"
-          v-model="chat.message"
+          v-on:keyup.enter="sendUrl"
+          v-model="share.url"
           type="text"
-          placeholder="Message"
+          placeholder="Enter a new URL to share"
         >
+        <ol>
+          <li v-for="( item, index ) in share.urlList">{{ item.isoTime }} | {{ item.senderUuid }} | {{ item.urlText }}</li>
+        </ol>
       </div>
 
     </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.3.0/socket.io.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/uuid/8.2.0/uuidv4.min.js"></script>
 
     <script src="https://unpkg.com/vue"></script>
     <script src="https://unpkg.com/vue-material"></script>
@@ -139,6 +141,7 @@
       new Vue( {
         el: '#app',
         data: {
+          uuid: uuidv4(),
           socket: null,
           bRadio: true,
           radio: {
@@ -156,24 +159,44 @@
           online: {
             users: []
           },
-          chat: {
-            messages: [],
-            messagesDisplay: '',
-            message: ''
+          share: {
+            urlList: [],
+            url: ''
           }
         },
         created: function() {
           this.socket = io()
+          this.socket.on( 'NEW_SUBMISSION_PROCESSED', ( { urlText, isoTime, senderUuid, msTimestamp } ) => {
+            const item = { urlText, isoTime, senderUuid, msTimestamp }
+            if ( this.share.urlList.every( entry => entry.urlText !== urlText ) ) {
+              const freshUrlList = this.share.urlList.slice()
+
+              freshUrlList.push( item )
+
+              freshUrlList.sort( ( a, b ) => (
+                ( b.msTimestamp - a.msTimestamp ) ||
+                ( ( a.senderUuid < b.senderUuid ) ? -1 : +( b.senderUuid < a.senderUuid ) )
+              ) )
+
+              if ( 10000 < freshUrlList.length ) {
+                freshUrlList.pop()
+              }
+
+              this.share.urlList = freshUrlList
+            }
+          } )
         },
         methods: {
-          sendMessage: function() {
-            // this.socket.emit( 'CHAT_MESSAGE', this.chat.message )
-            this.chat.messages.push( `${this.chat.message || ''}`.trim() )
-            this.chat.message = ''
-            if ( 10000 < this.chat.messages.length ) {
-              this.chat.messages.splice( 0, 1 )
+          sendUrl: function() {
+            const { url, urlList } = this.share
+
+            const urlText = `${url || ''}`.trim()
+
+            if ( urlText && urlList.every( entry => entry.urlText !== urlText ) ) {
+              this.share.url = ''
+              const item = { urlText, senderUuid: this.uuid }
+              this.socket.emit( 'SUBMIT_URL', item )
             }
-            this.chat.messagesDisplay = this.chat.messages.join( '\n' )
           }
         },
         destroyed: function() {
