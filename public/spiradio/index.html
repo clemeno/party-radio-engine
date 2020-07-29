@@ -88,8 +88,7 @@
       </div>
 
       <div>
-        <h2>Online</h2>
-
+        <h2>Online ({{ online.userList.length }})</h2>
       </div>
 
       <div class="submissions">
@@ -157,7 +156,7 @@
 
           },
           online: {
-            users: []
+            userList: []
           },
           share: {
             urlList: [],
@@ -166,6 +165,11 @@
         },
         created: function() {
           this.socket = io()
+
+          this.socket.on( 'USERS_LIST_UPDATED', ( { userList } ) => {
+            this.online.userList = userList
+          } )
+
           this.socket.on( 'NEW_SUBMISSION_PROCESSED', ( { urlText, isoTime, senderUuid, msTimestamp } ) => {
             const item = { urlText, isoTime, senderUuid, msTimestamp }
             if ( this.share.urlList.every( entry => entry.urlText !== urlText ) ) {
@@ -185,6 +189,8 @@
               this.share.urlList = freshUrlList
             }
           } )
+
+          this.socket.emit( 'HAJIMEMASHITE', { uuid: this.uuid } )
         },
         methods: {
           sendUrl: function() {
