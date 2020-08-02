@@ -7,6 +7,7 @@
       name="viewport"
       content="width=device-width, initial-scale=1.0"
     >
+   <base href="/spiradio/">
     <title>SpiRadio</title>
     <link
       rel="stylesheet"
@@ -20,11 +21,10 @@
       rel="stylesheet"
       href="https://unpkg.com/vue-material/dist/theme/default.css"
     >
-    <style>
-      .submissions {
-        font-family: monospace;
-      }
-
+    <link
+      rel="stylesheet"
+      href="index.css"
+    >
     </style>
   </head>
 
@@ -54,10 +54,32 @@
 
       <div>
         <h2>Flux</h2>
+        <div class="flux_media_list_container">
+          <ol>
+            <li v-for="( item, index ) in flux.mediaList">
+              {{ item.isoTime }} | {{ item.senderAccount }} | {{ item.type }} | {{ item.id }} | <md-button
+                v-on:click="play( item )"
+                class="md-icon-button md-dense md-primary"
+              >
+                <md-icon>play_arrow</md-icon>
+              </md-button>
+            </li>
+          </ol>
+        </div>
       </div>
 
       <div>
         <h2>Player</h2>
+        <iframe
+          v-if="'youtube' === player.currentMedia.type"
+          id="ytplayer"
+          type="text/html"
+          width="200"
+          height="200"
+          allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture"
+          v-bind:src="'https://www.youtube.com/embed/' + player.currentMedia.id + '?autoplay=1&enablejsapi=1'"
+          frameborder="0"
+        ></iframe>
         <div>
           <div>
             <md-button class="md-icon-button md-dense md-primary">
@@ -89,10 +111,21 @@
 
       <div>
         <h2>Online ({{ online.userList.length }})</h2>
+        <ol>
+          <li
+            v-for="( item, index ) in online.userList"
+            class="userlist"
+          >
+            <span
+              v-bind:title="item.uuid"
+              v-bind:class="{ self: item.uuid === uuid }"
+            >{{ item.account }}</span>
+          </li>
+        </ol>
       </div>
 
       <div class="submissions">
-        <h2>Submit as {{ uuid }}</h2>
+        <h2>Submit as <span v-bind:title="uuid">{{ account }}</span></h2>
         <input
           v-on:keyup.enter="sendUrl"
           v-model="share.url"
@@ -100,7 +133,7 @@
           placeholder="Enter a new URL to share"
         >
         <ol>
-          <li v-for="( item, index ) in share.urlList">{{ item.isoTime }} | {{ item.senderUuid }} | {{ item.urlText }}</li>
+          <li v-for="( item, index ) in share.urlList">{{ item.isoTime }} | {{ item.senderAccount }} | {{ item.urlText }}</li>
         </ol>
       </div>
 
@@ -108,108 +141,15 @@
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.3.0/socket.io.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/uuid/8.2.0/uuidv4.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2"></script>
 
     <script src="https://unpkg.com/vue"></script>
+
     <script src="https://unpkg.com/vue-material"></script>
     <script>Vue.use( VueMaterial.default )</script>
-    <script>
-      Vue.material = {
-        ...Vue.material,
+    <script src="vue_material_config.js"></script>
 
-        // activeness of ripple effect
-        ripple: true,
-
-        theming: {},
-        locale: {
-          ...Vue.material.locale,
-
-          // range for datepicker
-          startYear: 1900,
-          endYear: 2099,
-
-          // date format for date picker
-          dateFormat: 'yyyy-MM-dd',
-
-          // `0` stand for Sunday, `1` stand for Monday
-          firstDayOfAWeek: 1
-        }
-      }
-    </script>
-
-    <script>
-      new Vue( {
-        el: '#app',
-        data: {
-          uuid: uuidv4(),
-          socket: null,
-          bRadio: true,
-          radio: {
-            currentTitleDisplay: ''
-          },
-          perso: {
-            currentTitleDisplay: ''
-          },
-          flux: {
-
-          },
-          player: {
-
-          },
-          online: {
-            userList: []
-          },
-          share: {
-            urlList: [],
-            url: ''
-          }
-        },
-        created: function() {
-          this.socket = io()
-
-          this.socket.on( 'USERS_LIST_UPDATED', ( { userList } ) => {
-            this.online.userList = userList
-          } )
-
-          this.socket.on( 'NEW_SUBMISSION_PROCESSED', ( { urlText, isoTime, senderUuid, msTimestamp } ) => {
-            const item = { urlText, isoTime, senderUuid, msTimestamp }
-            if ( this.share.urlList.every( entry => entry.urlText !== urlText ) ) {
-              const freshUrlList = this.share.urlList.slice()
-
-              freshUrlList.push( item )
-
-              freshUrlList.sort( ( a, b ) => (
-                ( b.msTimestamp - a.msTimestamp ) ||
-                ( ( a.senderUuid < b.senderUuid ) ? -1 : +( b.senderUuid < a.senderUuid ) )
-              ) )
-
-              if ( 10000 < freshUrlList.length ) {
-                freshUrlList.pop()
-              }
-
-              this.share.urlList = freshUrlList
-            }
-          } )
-
-          this.socket.emit( 'HAJIMEMASHITE', { uuid: this.uuid } )
-        },
-        methods: {
-          sendUrl: function() {
-            const { url, urlList } = this.share
-
-            const urlText = `${url || ''}`.trim()
-
-            if ( urlText && urlList.every( entry => entry.urlText !== urlText ) ) {
-              this.share.url = ''
-              const item = { urlText, senderUuid: this.uuid }
-              this.socket.emit( 'SUBMIT_URL', item )
-            }
-          }
-        },
-        destroyed: function() {
-
-        }
-      } )
-    </script>
+    <script src="index.js"></script>
   </body>
 
 </html>

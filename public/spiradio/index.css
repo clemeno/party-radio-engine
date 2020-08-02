@@ -1,0 +1,17 @@
+
+.submissions {
+  font-family: monospace;
+}
+
+[title] {
+  cursor: help;
+}
+
+.flux_media_list_container {
+  max-height: 50vh;
+  overflow-y: auto;
+}
+
+.userlist .self {
+  font-weight: bold;
+}
