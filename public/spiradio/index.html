@@ -7,7 +7,7 @@
       name="viewport"
       content="width=device-width, initial-scale=1.0"
     >
-   <base href="/spiradio/">
+    <base href="/spiradio/">
     <title>SpiRadio</title>
     <link
       rel="stylesheet"
@@ -16,7 +16,7 @@
     <link
       rel="stylesheet"
       href="https://unpkg.com/vue-material/dist/vue-material.min.css"
-    >
+    />
     <link
       rel="stylesheet"
       href="https://unpkg.com/vue-material/dist/theme/default.css"
@@ -71,13 +71,23 @@
       <div>
         <h2>Player</h2>
         <iframe
+          v-if="'spotify' === player.currentMedia.type"
+          v-bind:src="'https://open.spotify.com/embed/track/' + player.currentMedia.id"
+          id="spplayer"
+          width="300"
+          height="380"
+          frameborder="0"
+          allowtransparency="true"
+          allow="encrypted-media"
+        ></iframe>
+        <iframe
           v-if="'youtube' === player.currentMedia.type"
+          v-bind:src="'https://www.youtube.com/embed/' + player.currentMedia.id + '?autoplay=1&enablejsapi=1'"
           id="ytplayer"
           type="text/html"
           width="200"
           height="200"
           allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture"
-          v-bind:src="'https://www.youtube.com/embed/' + player.currentMedia.id + '?autoplay=1&enablejsapi=1'"
           frameborder="0"
         ></iframe>
         <div>
@@ -139,12 +149,15 @@
 
     </div>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.3.0/socket.io.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/uuid/8.2.0/uuidv4.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2"></script>
+    <script
+      src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.3.0/socket.io.js"
+      integrity="sha512-v8ng/uGxkge3d1IJuEo6dJP8JViyvms0cly9pnbfRxT6/31c3dRWxIiwGnMSWwZjHKOuY3EVmijs7k1jz/9bLA=="
+      crossorigin="anonymous"
+    ></script>
+    <script src="https://unpkg.com/uuid/dist/umd/uuidv4.min.js"></script>
+    <script src="https://unpkg.com/sweetalert2"></script>
 
     <script src="https://unpkg.com/vue"></script>
-
     <script src="https://unpkg.com/vue-material"></script>
     <script>Vue.use( VueMaterial.default )</script>
     <script src="vue_material_config.js"></script>

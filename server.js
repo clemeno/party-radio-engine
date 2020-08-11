@@ -43,6 +43,7 @@ io.on(
         const dNow = new Date()
         const item = { urlText: `Welcome ${account}!`, isoTime: dNow.toISOString(), senderUuid: 'server', msTimestamp: +dNow }
         io.emit('NEW_SUBMISSION_PROCESSED', item)
+        socket.emit('PLAYLIST_UPDATED', { playlist })
         user = uuid
         userList.push({ uuid, account })
         io.emit('USERS_LIST_UPDATED', { userList })

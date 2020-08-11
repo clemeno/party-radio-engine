@@ -58,7 +58,7 @@ new window.Vue({ // eslint-disable-line no-new
       cancelButtonText: this.account
     })
 
-    this.account = accountNameGiven?.value || this.account
+    this.account = ( accountNameGiven && accountNameGiven.value ) || this.account
 
     this.socket = window.io()
 
@@ -97,6 +97,7 @@ new window.Vue({ // eslint-disable-line no-new
     this.socket.on(
       'PLAYLIST_UPDATED',
       ({ playlist }) => {
+        console.log({ playlist })
         this.flux.mediaList = playlist.map(m => {
           const senderAccount = this.online.uuidToAccount[m.senderUuid]
           return { ...m, senderAccount }
