@@ -3,6 +3,11 @@ Online Realtime Media Music Video Aggregator Radio Flux Manager
 
 ## Install
 
+**Example of host file setup for local.host fake domain registration**
+```
+127.0.0.1 local.host
+```
+
 **External dependencies**
 ```
 npm i
@@ -34,5 +39,5 @@ npm run dev
 
 **Browser**
 ```
-127.0.0.1:43210/spiradio
+local.host:43210/spiradio
 ```
