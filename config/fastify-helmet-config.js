@@ -1,3 +1,3 @@
 'use strict'
 
-module.exports = { noCache: true }
+module.exports = {}
