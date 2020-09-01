@@ -7,6 +7,10 @@
       name="viewport"
       content="width=device-width, initial-scale=1.0"
     >
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src *; style-src 'self' * 'unsafe-inline'; script-src 'self' * 'unsafe-inline' 'unsafe-eval'"
+    >
     <base href="/spiradio/">
     <title>SpiRadio</title>
     <link
@@ -15,11 +19,15 @@
     >
     <link
       rel="stylesheet"
-      href="https://unpkg.com/vue-material/dist/vue-material.min.css"
+      href="https://cdn.jsdelivr.net/npm/sweetalert2@9.17.1/dist/sweetalert2.min.css"
+    >
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/vue-material@1.0.0-beta-15/dist/vue-material.css"
     />
     <link
       rel="stylesheet"
-      href="https://unpkg.com/vue-material/dist/theme/default.css"
+      href="https://cdn.jsdelivr.net/npm/vue-material@1.0.0-beta-15/dist/theme/default.css"
     >
     <link
       rel="stylesheet"
@@ -149,17 +157,12 @@
 
     </div>
 
-    <script
-      src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.3.0/socket.io.js"
-      integrity="sha512-v8ng/uGxkge3d1IJuEo6dJP8JViyvms0cly9pnbfRxT6/31c3dRWxIiwGnMSWwZjHKOuY3EVmijs7k1jz/9bLA=="
-      crossorigin="anonymous"
-    ></script>
-    <script src="https://unpkg.com/uuid/dist/umd/uuidv4.min.js"></script>
-    <script src="https://unpkg.com/sweetalert2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/socket.io-client@2.3.0/dist/socket.io.dev.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/uuid@8.3.0/dist/umd/uuidv4.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@9.17.1/dist/sweetalert2.all.min.js"></script>
 
-    <script src="https://unpkg.com/vue"></script>
-    <script src="https://unpkg.com/vue-material"></script>
-    <script>Vue.use( VueMaterial.default )</script>
+    <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vue-material@1.0.0-beta-15/dist/vue-material.js"></script>
     <script src="vue_material_config.js"></script>
 
     <script src="index.js"></script>

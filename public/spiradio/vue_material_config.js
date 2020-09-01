@@ -1,4 +1,6 @@
 
+window.Vue.use(window.VueMaterial.default)
+
 window.Vue.material = {
   ...window.Vue.material,
 

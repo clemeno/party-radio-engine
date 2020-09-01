@@ -61,20 +61,59 @@ io.on(
           const url = urlText.trim()
           const bYoutuBe = url.includes('youtu.be')
           const bYoutube = url.includes('youtube')
+          const bSpotify = url.includes('spotify:track:')
+          const bSpotifyUrl = url.includes('spotify.com/track/')
 
           const getIdStrategies = [
-            { if: bYoutuBe, getId: () => `${url.split('youtu.be/')[1]}`.split('?')[0].trim() },
-            { if: bYoutube, getId: () => `${/[?&]v=([^&]+)/.exec(url)[1]}`.trim() }
+            {
+              if: bYoutuBe,
+              getId: () => {
+                let res = ''
+                const grab = url.split('youtu.be/')
+                if (grab[1]) {
+                  res = grab[1].trim().split('?')[0].trim()
+                }
+                return res
+              }
+            },
+            {
+              if: bYoutube,
+              getId: () => {
+                let res = ''
+                const grabUrl = /[?&]v=([^&/\s]+)/.exec(url)
+                if (grabUrl[1]) {
+                  res = grabUrl[1].trim()
+                }
+                return res
+              }
+            },
+            { if: bSpotify, getId: () => url.split(':')[2].trim() },
+            {
+              if: bSpotifyUrl,
+              getId: () => {
+                let res = ''
+                const grab = url.split('spotify.com/track/')
+                if (grab[1]) {
+                  res = grab[1].trim().split('?')[0].trim()
+                }
+                return res
+              }
+            }
           ]
-          const getId = getIdStrategies.find(s => s.if).getId
+          const strategy = getIdStrategies.find(s => s.if)
 
-          if (getId) {
+          if (strategy) {
+            const getId = strategy.getId
+
             const id = getId(url)
 
             const media = { id, senderUuid, isoTime: dNow.toISOString(), msTimestamp: +dNow, type: null }
 
             if (bYoutuBe || bYoutube) {
               media.type = 'youtube'
+            }
+            if (bSpotify || bSpotifyUrl) {
+              media.type = 'spotify'
             }
 
             if (playlist.every(m => m.id !== id)) {

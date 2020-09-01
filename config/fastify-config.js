@@ -1,13 +1,14 @@
 'use strict'
 
-// const fs = require('fs')
+const fs = require('fs')
 const path = require('path')
 
 // const moment = require( 'moment-timezone' )
 
 // const {
-//   NODE_ENV
-//   // , SSL_KEY, SSL_CERT
+//   // NODE_ENV,
+//   SSL_KEY,
+//   SSL_CERT,
 // } = require('../utils/env')
 
 // const bDev = NODE_ENV === 'development'
@@ -19,14 +20,14 @@ module.exports = {
   caseSensitive: true,
   onProtoPoisoning: 'remove',
   onConstructorPoisoning: 'remove',
-  // http2: true,
-  // https: {
-  //   allowHTTP1: true,
-  //   key: SSL_KEY,
-  //   cert: SSL_CERT
-  //   // key: fs.readFileSync(path.join(__dirname, 'local.host', 'key.pem')),
-  //   // cert: fs.readFileSync(path.join(__dirname, 'local.host', 'cert.pem'))
-  // },
+  http2: true,
+  https: {
+    allowHTTP1: true,
+    // key: SSL_KEY,
+    // cert: SSL_CERT
+    key: fs.readFileSync(path.join(__dirname, 'local.host', 'key.pem')),
+    cert: fs.readFileSync(path.join(__dirname, 'local.host', 'cert.pem'))
+  },
   logger: {
     prettyPrint: { translateTime: 'SYS:standard' },
     level,

@@ -58,7 +58,7 @@ new window.Vue({ // eslint-disable-line no-new
       cancelButtonText: this.account
     })
 
-    this.account = ( accountNameGiven && accountNameGiven.value ) || this.account
+    this.account = (accountNameGiven && accountNameGiven.value) || this.account
 
     this.socket = window.io()
 
