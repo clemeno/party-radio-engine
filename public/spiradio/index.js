@@ -2,7 +2,7 @@
 new window.Vue({ // eslint-disable-line no-new
   el: '#app',
   data: {
-    uuid: window.uuidv4(),
+    uuid: '',
     account: 'Anonymous',
     socket: null,
     bRadio: true,
@@ -105,7 +105,7 @@ new window.Vue({ // eslint-disable-line no-new
       }
     )
 
-    this.socket.emit('HAISAI', { uuid: this.uuid, account: this.account })
+    this.socket.emit('MENSOORE', { account: this.account })
   },
   destroyed: function () {
 
