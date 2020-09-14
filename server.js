@@ -1,87 +1,103 @@
 'use strict'
 
-const { SERVER_LISTEN_PORT, SERVER_LISTEN_ORIGIN } = require( './utils/env' )
+const { SERVER_LISTEN_PORT, SERVER_LISTEN_ORIGIN } = require('./utils/env')
 
-const { v4: uuidv4 } = require( 'uuid' )
+const { v4: uuidv4 } = require('uuid')
 
-const app = require( './app' )
-const fastify = require( 'fastify' )( app.options )
+const app = require('./app')
+const fastify = require('fastify')(app.options)
 
-const SocketIOServer = require( 'socket.io' )
+const SocketIOServer = require('socket.io')
 
-const { isNotEmptyArray } = require( './utils/is-not-empty-array' )
+const { isNotEmptyArray } = require('./utils/is-not-empty-array')
+const { isSet } = require('./utils/is-set')
 
-process.on( 'unhandledRejection', err => {
-  console.log( err )
-  fastify.log.error( err )
-} )
+process.on('unhandledRejection', err => {
+  console.log(err)
+  fastify.log.error(err)
+})
 
-fastify.register( app )
+fastify.register(app)
 
 fastify.listen(
   SERVER_LISTEN_PORT || 43210,
   SERVER_LISTEN_ORIGIN || '::',
   err => {
-    if ( err ) {
-      console.log( err )
-      fastify.log.error( err )
-      process.exit( 1 )
+    if (err) {
+      console.log(err)
+      fastify.log.error(err)
+      process.exit(1)
     }
   }
 )
 
-const sqlite3 = require( 'sqlite3' )
+const sqlite3 = require('sqlite3')
 
-const io = new SocketIOServer( fastify.server, {} )
+const io = new SocketIOServer(fastify.server, {})
 
 io.on(
   'connection',
   async socket => {
-
     let userUuid = ''
 
     const db = new sqlite3.Database(
       './sqlite_test_001.db',
       err => {
-        if ( err ) {
-          console.log( { message: 'Could not connect to the sqlite db', err } )
+        if (err) {
+          console.log({ message: 'Could not connect to the sqlite db', err })
         } else {
-          console.log( { message: 'Connected to the sqlite db' } )
+          console.log({ message: 'Connected to the sqlite db' })
         }
       }
     )
 
-    const runAsync = function( sql, ...params ) {
+    const runAsync = function (sql, ...params) {
       const self = this
-      return new Promise( function( resolve, reject ) {
-        try { self.run( sql, ...params ) } catch ( error ) { reject( error ) }
+      return new Promise(function (resolve, reject) {
+        try { self.run(sql, ...params) } catch (error) { reject(error) }
         resolve()
-      } )
+      })
     }
 
-    const allAsync = function( sql, ...params ) {
+    const allAsync = function (sql, ...params) {
       const self = this
-      return new Promise( function( resolve, reject ) {
+      return new Promise(function (resolve, reject) {
         self.all(
           sql,
           ...params,
-          function( error, rows ) {
-            if ( error ) {
-              reject( error )
+          function (error, rows) {
+            if (error) {
+              reject(error)
             } else {
-              resolve( { rows: rows } )
+              resolve({ rows: rows })
             }
           }
         )
-      } )
+      })
     }
 
-    const stmtRunAsync = function( ...params ) {
+    const stmtRunAsync = function (...params) {
       const self = this
-      return new Promise( function( resolve, reject ) {
-        try { self.run( ...params ) } catch ( error ) { reject( error ) }
+      return new Promise(function (resolve, reject) {
+        try { self.run(...params) } catch (error) { reject(error) }
         resolve()
-      } )
+      })
+    }
+
+    const stmtAllAsync = function (...params) {
+      const self = this
+      return new Promise(function (resolve, reject) {
+        self.all(
+          ...params,
+          function (error, rows) {
+            if (error) {
+              reject(error)
+            } else {
+              resolve({ rows: rows })
+            }
+          }
+        )
+      })
     }
 
     db.runAsync = runAsync
@@ -90,7 +106,8 @@ io.on(
     const qCreateTableUser = `
       CREATE TABLE IF NOT EXISTS user (
         uuid TEXT PRIMARY KEY,
-        account TEXT
+        account TEXT,
+        bOnline INTEGER
       )
     `
     const qCreateTableMedia = `
@@ -105,11 +122,11 @@ io.on(
       )
     `
 
-    await Promise.all( [ db.runAsync( qCreateTableUser ), db.runAsync( qCreateTableMedia ) ] )
+    await Promise.all([db.runAsync(qCreateTableUser), db.runAsync(qCreateTableMedia)])
 
     socket.on(
       'MENSOORE',
-      ( { account } ) => {
+      async ({ account }) => {
         const dNow = new Date()
         const uuid = uuidv4()
         const item = {
@@ -122,53 +139,109 @@ io.on(
 
         userUuid = uuid
 
-        const stmt = db.prepare( `INSERT INTO user ( uuid, account ) VALUES ( :uuid, :account )`, { ':uuid': uuid, ':account': account } )
+        const stmt = db.prepare(
+          'INSERT INTO user ( uuid, account, bOnline ) VALUES ( :uuid, :account, 1 )',
+          { ':uuid': uuid, ':account': account }
+        )
         stmt.runAsync = stmtRunAsync
         await stmt.runAsync()
 
         let userList = []
         let playlist = []
 
-        const [ userListRes, playlistRes ] = await Promise.all( [
-          qb.allAsync( `SELECT * FROM user` ),
-          qb.allAsync( `SELECT * FROM media` )
-        ] )
+        const [userListRes, playlistRes] = await Promise.all([
+          db.allAsync('SELECT * FROM user'),
+          db.allAsync('SELECT * FROM media')
+        ])
 
-        if ( userListRes && isNotEmptyArray( userListRes.rows ) ) {
+        if (userListRes && isNotEmptyArray(userListRes.rows)) {
           userList = userListRes.rows
         }
-        if ( playlistRes && isNotEmptyArray( playlistRes.rows ) ) {
+        if (playlistRes && isNotEmptyArray(playlistRes.rows)) {
           playlist = playlistRes.rows
         }
 
-        io.emit( 'NEW_SUBMISSION_PROCESSED', item )
-        socket.emit( 'PLAYLIST_UPDATED', { playlist } )
-        io.emit( 'USERS_LIST_UPDATED', { userList } )
+        io.emit('NEW_SUBMISSION_PROCESSED', item)
+        socket.emit('PLAYLIST_UPDATED', { playlist })
+        io.emit('USERS_LIST_UPDATED', { userList })
+      }
+    )
+
+    socket.on(
+      'HAISAI',
+      async ({ uuid, account }) => {
+        const dNow = new Date()
+
+        userUuid = uuid
+
+        const stmtGetUser = db.prepare('SELECT * FROM user WHERE :uuid = uuid')
+        stmtGetUser.allAsync = stmtAllAsync
+        await stmtGetUser.allAsync()
+        const { rows: userRows } = (await stmtGetUser.allAsync()) || {}
+        const userFound = userRows && userRows[0]
+
+        const item = {
+          uuid,
+          urlText: `Welcome ${account}!`,
+          senderUuid: '',
+          isoTime: dNow.toISOString(),
+          msTimestamp: +dNow
+        }
+
+        if (userFound) {
+          await db.runAsync('UPDATE user SET bOnline = 1 WHERE :uuid = uuid')
+        } else {
+          const stmtNewUser = db.prepare(
+            'INSERT INTO user ( uuid, account, bOnline ) VALUES ( :uuid, :account, 1 )',
+            { ':uuid': uuid, ':account': isSet(account) ? account : `Anonymous_${+dNow}` }
+          )
+          stmtNewUser.runAsync = stmtRunAsync
+          await stmtNewUser.runAsync()
+        }
+
+        let userList = []
+        let playlist = []
+
+        const [userListRes, playlistRes] = await Promise.all([
+          db.allAsync('SELECT * FROM user'),
+          db.allAsync('SELECT * FROM media')
+        ])
+
+        if (userListRes && isNotEmptyArray(userListRes.rows)) {
+          userList = userListRes.rows
+        }
+        if (playlistRes && isNotEmptyArray(playlistRes.rows)) {
+          playlist = playlistRes.rows
+        }
+
+        io.emit('NEW_SUBMISSION_PROCESSED', item)
+        socket.emit('PLAYLIST_UPDATED', { playlist })
+        io.emit('USERS_LIST_UPDATED', { userList })
       }
     )
 
     socket.on(
       'SUBMIT_URL',
-      ( { urlText, isoTime, senderUuid, msTimestamp } ) => {
+      async ({ urlText, isoTime, senderUuid, msTimestamp }) => {
         const dNow = new Date()
         const item = { urlText, isoTime: dNow.toISOString(), senderUuid, msTimestamp: +dNow }
 
-        io.emit( 'NEW_SUBMISSION_PROCESSED', item )
+        io.emit('NEW_SUBMISSION_PROCESSED', item)
 
         const url = urlText.trim()
-        const bYoutuBe = url.includes( 'youtu.be' )
-        const bYoutube = url.includes( 'youtube' )
-        const bSpotify = url.includes( 'spotify:track:' )
-        const bSpotifyUrl = url.includes( 'spotify.com/track/' )
+        const bYoutuBe = url.includes('youtu.be')
+        const bYoutube = url.includes('youtube')
+        const bSpotify = url.includes('spotify:track:')
+        const bSpotifyUrl = url.includes('spotify.com/track/')
 
         const getIdStrategies = [
           {
             if: bYoutuBe,
             getId: () => {
               let res = ''
-              const grab = url.split( 'youtu.be/' )
-              if ( grab[ 1 ] ) {
-                res = grab[ 1 ].trim().split( '?' )[ 0 ].trim()
+              const grab = url.split('youtu.be/')
+              if (grab[1]) {
+                res = grab[1].trim().split('?')[0].trim()
               }
               return res
             }
@@ -177,79 +250,81 @@ io.on(
             if: bYoutube,
             getId: () => {
               let res = ''
-              const grabUrl = /[?&]v=([^&/\s]+)/.exec( url )
-              if ( grabUrl[ 1 ] ) {
-                res = grabUrl[ 1 ].trim()
+              const grabUrl = /[?&]v=([^&/\s]+)/.exec(url)
+              if (grabUrl[1]) {
+                res = grabUrl[1].trim()
               }
               return res
             }
           },
-          { if: bSpotify, getId: () => url.split( ':' )[ 2 ].trim() },
+          { if: bSpotify, getId: () => url.split(':')[2].trim() },
           {
             if: bSpotifyUrl,
             getId: () => {
               let res = ''
-              const grab = url.split( 'spotify.com/track/' )
-              if ( grab[ 1 ] ) {
-                res = grab[ 1 ].trim().split( '?' )[ 0 ].trim()
+              const grab = url.split('spotify.com/track/')
+              if (grab[1]) {
+                res = grab[1].trim().split('?')[0].trim()
               }
               return res
             }
           }
         ]
-        const strategy = getIdStrategies.find( s => s.if )
+        const strategy = getIdStrategies.find(s => s.if)
 
-        if ( strategy ) {
+        if (strategy) {
           const getId = strategy.getId
 
-          const id = getId( url )
+          const id = getId(url)
 
           const media = { id, type: '', senderUuid, isoTime: dNow.toISOString(), msTimestamp: +dNow }
 
-          if ( bYoutuBe || bYoutube ) {
+          if (bYoutuBe || bYoutube) {
             media.type = 'youtube'
           }
-          if ( bSpotify || bSpotifyUrl ) {
+          if (bSpotify || bSpotifyUrl) {
             media.type = 'spotify'
           }
 
           let currentPlaylist = []
-          const cPlaylistRes = qb.allAsync( `SELECT * FROM media` )
-          if ( cPlaylistRes && isNotEmptyArray( cPlaylistRes.rows ) ) {
+          const cPlaylistRes = db.allAsync('SELECT * FROM media')
+          if (cPlaylistRes && isNotEmptyArray(cPlaylistRes.rows)) {
             currentPlaylist = cPlaylistRes.rows
           }
-          if ( currentPlaylist.every( m => ( m.id !== media.id ) || ( m.type !== media.type ) ) ) {
-            const kvcEntries = Object.entries( media ).map( ( [ k, v ] ) => ( { key: `:${k}`, value: v, column: k } ) )
-            const kvParams = kvcEntries.reduce( ( o, { key, value } ) => ( { ...o, [ key ]: value } ), {} )
+          if (currentPlaylist.every(m => (m.id !== media.id) || (m.type !== media.type))) {
+            const kvcEntries = Object.entries(media).map(([k, v]) => ({ key: `:${k}`, value: v, column: k }))
+            const kvParams = kvcEntries.reduce((o, { key, value }) => ({ ...o, [key]: value }), {})
             const stmt = db.prepare(
-              `INSERT INTO media ( ${entries.map( e => e.column ).join( ',' )} ) VALUES ( ${entries.map( e => e.key ).join( ',' )} )`,
+              `INSERT INTO media ( ${kvcEntries.map(e => e.column).join(',')} ) VALUES ( ${kvcEntries.map(e => e.key).join(',')} )`,
               kvParams
             )
             stmt.runAsync = stmtRunAsync
             await stmt.runAsync()
 
             let playlist = []
-            const playlistRes = qb.allAsync( `SELECT * FROM media` )
-            if ( playlistRes && isNotEmptyArray( playlistRes.rows ) ) {
+            const playlistRes = db.allAsync('SELECT * FROM media')
+            if (playlistRes && isNotEmptyArray(playlistRes.rows)) {
               playlist = playlistRes.rows
             }
 
-            io.emit( 'PLAYLIST_UPDATED', { playlist } )
+            io.emit('PLAYLIST_UPDATED', { playlist })
           }
         }
-
       }
     )
 
     socket.on(
       'disconnect',
-      () => {
+      async () => {
+        if (userUuid) {
+          const stmtOffline = db.prepare('UPDATE user SET bOnline = 0 WHERE :uuid = uuid', { ':uuid': userUuid })
+          stmtOffline.runAsync = stmtRunAsync
+          await stmtOffline.runAsync()
+        }
 
-        // qb.run( `DELETE FROM user WHERE` )
-
-        let userList = []
-
-        io.emit( 'USERS_LIST_UPDATED', { userList } )
+        const resOnlineUsersList = await db.allAsync('SELECT * FROM user WHERE 0 < bOnline')
+        const { rows: userList } = resOnlineUsersList || {}
+        io.emit('USERS_LIST_UPDATED', { userList })
       }
     )
   }
