@@ -138,6 +138,7 @@ io.on(
         }
 
         userUuid = uuid
+        socket.emit('MENSOORE', { account, uuid })
 
         const stmt = db.prepare(
           'INSERT INTO user ( uuid, account, bOnline ) VALUES ( :uuid, :account, 1 )',
@@ -222,7 +223,7 @@ io.on(
 
     socket.on(
       'SUBMIT_URL',
-      async ({ urlText, isoTime, senderUuid, msTimestamp }) => {
+      async ({ urlText, senderUuid }) => {
         const dNow = new Date()
         const item = { urlText, isoTime: dNow.toISOString(), senderUuid, msTimestamp: +dNow }
 
@@ -317,9 +318,18 @@ io.on(
       'disconnect',
       async () => {
         if (userUuid) {
-          const stmtOffline = db.prepare('UPDATE user SET bOnline = 0 WHERE :uuid = uuid', { ':uuid': userUuid })
-          stmtOffline.runAsync = stmtRunAsync
-          await stmtOffline.runAsync()
+          const stmtMedia = db.prepare('SELECT uuid FROM media WHERE :senderUuid = senderUuid LIMIT 1', { ':senderUuid': userUuid })
+          stmtMedia.allAsync = stmtAllAsync
+          const { rows: countMediaRes } = await stmtMedia.allAsync()
+          if (countMediaRes.length) {
+            const stmtOffline = db.prepare('UPDATE user SET bOnline = 0 WHERE :uuid = uuid', { ':uuid': userUuid })
+            stmtOffline.runAsync = stmtRunAsync
+            await stmtOffline.runAsync()
+          } else {
+            const stmtDelete = db.prepare('DELETE FROM user WHERE :uuid = uuid', { ':uuid': userUuid })
+            stmtDelete.runAsync = stmtRunAsync
+            await stmtDelete.runAsync()
+          }
         }
 
         const resOnlineUsersList = await db.allAsync('SELECT * FROM user WHERE 0 < bOnline')

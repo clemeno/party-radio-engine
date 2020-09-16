@@ -1,9 +1,11 @@
 
+const isSet = v => ((typeof v) !== 'undefined') && (v !== null)
+
 new window.Vue({ // eslint-disable-line no-new
   el: '#app',
   data: {
-    uuid: '',
-    account: 'Anonymous',
+    uuid: window.localStorage.getItem('spiradio_uuid') || null,
+    account: window.localStorage.getItem('spiradio_account') || null,
     socket: null,
     bRadio: true,
     radio: {
@@ -45,22 +47,35 @@ new window.Vue({ // eslint-disable-line no-new
     }
   },
   created: async function () {
-    const accountNameGiven = await window.Swal.fire({
-      title: 'Username',
-      input: 'text',
-      inputAutoTrim: true,
-      inputAttributes: {
-        autocapitalize: 'off',
-        autocorrect: 'off'
-      },
-      confirmButtonText: 'OK',
-      showCancelButton: true,
-      cancelButtonText: this.account
-    })
-
-    this.account = (accountNameGiven && accountNameGiven.value) || this.account
+    const bNew = !isSet(this.uuid) || !isSet(this.account)
+    if (bNew) {
+      const accountNameGiven = await window.Swal.fire({
+        title: 'Username',
+        input: 'text',
+        inputAutoTrim: true,
+        inputAttributes: {
+          autocapitalize: 'off',
+          autocorrect: 'off'
+        },
+        confirmButtonText: 'OK',
+        showCancelButton: true,
+        cancelButtonText: 'Anonymous'
+      })
+      this.account = (accountNameGiven && accountNameGiven.value) || `Anonymous_${+(new Date())}`
+      window.localStorage.setItem('spiradio_account', this.account)
+    }
 
     this.socket = window.io()
+
+    this.socket.on(
+      'MENSOORE',
+      ({ account, uuid }) => {
+        window.localStorage.setItem('spiradio_uuid', uuid)
+        window.localStorage.setItem('spiradio_account', account)
+        this.uuid = uuid
+        this.account = account
+      }
+    )
 
     this.socket.on(
       'USERS_LIST_UPDATED',
@@ -105,7 +120,11 @@ new window.Vue({ // eslint-disable-line no-new
       }
     )
 
-    this.socket.emit('MENSOORE', { account: this.account })
+    if (bNew) {
+      this.socket.emit('MENSOORE', { account: this.account })
+    } else if (isSet(this.uuid) && isSet(this.account)) {
+      this.socket.emit('HAISAI', { uuid: this.uuid, account: this.account })
+    }
   },
   destroyed: function () {
 
