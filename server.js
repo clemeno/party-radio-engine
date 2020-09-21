@@ -33,6 +33,49 @@ fastify.listen(
 
 const sqlite3 = require('sqlite3')
 
+const runAsync = function (db, sql) {
+  return new Promise(function (resolve, reject) {
+    try { db.run(sql) } catch (error) { reject(error) }
+    resolve()
+  })
+}
+
+const allAsync = function (db, sql) {
+  return new Promise(function (resolve, reject) {
+    db.all(
+      sql,
+      function (error, rows) {
+        if (error) {
+          reject(error)
+        } else {
+          resolve({ rows: rows })
+        }
+      }
+    )
+  })
+}
+
+const stmtRunAsync = function (stmt) {
+  return new Promise(function (resolve, reject) {
+    try { stmt.run() } catch (error) { reject(error) }
+    resolve()
+  })
+}
+
+const stmtAllAsync = function (stmt) {
+  return new Promise(function (resolve, reject) {
+    stmt.all(
+      function (error, rows) {
+        if (error) {
+          reject(error)
+        } else {
+          resolve({ rows: rows })
+        }
+      }
+    )
+  })
+}
+
 const io = new SocketIOServer(fastify.server, {})
 
 io.on(
@@ -50,58 +93,6 @@ io.on(
         }
       }
     )
-
-    const runAsync = function (sql, ...params) {
-      const self = this
-      return new Promise(function (resolve, reject) {
-        try { self.run(sql, ...params) } catch (error) { reject(error) }
-        resolve()
-      })
-    }
-
-    const allAsync = function (sql, ...params) {
-      const self = this
-      return new Promise(function (resolve, reject) {
-        self.all(
-          sql,
-          ...params,
-          function (error, rows) {
-            if (error) {
-              reject(error)
-            } else {
-              resolve({ rows: rows })
-            }
-          }
-        )
-      })
-    }
-
-    const stmtRunAsync = function (...params) {
-      const self = this
-      return new Promise(function (resolve, reject) {
-        try { self.run(...params) } catch (error) { reject(error) }
-        resolve()
-      })
-    }
-
-    const stmtAllAsync = function (...params) {
-      const self = this
-      return new Promise(function (resolve, reject) {
-        self.all(
-          ...params,
-          function (error, rows) {
-            if (error) {
-              reject(error)
-            } else {
-              resolve({ rows: rows })
-            }
-          }
-        )
-      })
-    }
-
-    db.runAsync = runAsync
-    db.allAsync = allAsync
 
     const qCreateTableUser = `
       CREATE TABLE IF NOT EXISTS user (
@@ -122,7 +113,7 @@ io.on(
       )
     `
 
-    await Promise.all([db.runAsync(qCreateTableUser), db.runAsync(qCreateTableMedia)])
+    await Promise.all([runAsync(db, qCreateTableUser), runAsync(db, qCreateTableMedia)])
 
     socket.on(
       'MENSOORE',
@@ -144,15 +135,14 @@ io.on(
           'INSERT INTO user ( uuid, account, bOnline ) VALUES ( :uuid, :account, 1 )',
           { ':uuid': uuid, ':account': account }
         )
-        stmt.runAsync = stmtRunAsync
-        await stmt.runAsync()
+        await stmtRunAsync(stmt)
 
         let userList = []
         let playlist = []
 
         const [userListRes, playlistRes] = await Promise.all([
-          db.allAsync('SELECT * FROM user'),
-          db.allAsync('SELECT * FROM media')
+          allAsync(db, 'SELECT * FROM user'),
+          allAsync(db, 'SELECT * FROM media')
         ])
 
         if (userListRes && isNotEmptyArray(userListRes.rows)) {
@@ -176,9 +166,8 @@ io.on(
         userUuid = uuid
 
         const stmtGetUser = db.prepare('SELECT * FROM user WHERE :uuid = uuid')
-        stmtGetUser.allAsync = stmtAllAsync
-        await stmtGetUser.allAsync()
-        const { rows: userRows } = (await stmtGetUser.allAsync()) || {}
+        await stmtAllAsync(stmtGetUser)
+        const { rows: userRows } = (await allAsync(stmtGetUser)) || {}
         const userFound = userRows && userRows[0]
 
         const item = {
@@ -190,22 +179,21 @@ io.on(
         }
 
         if (userFound) {
-          await db.runAsync('UPDATE user SET bOnline = 1 WHERE :uuid = uuid')
+          await runAsync(db, 'UPDATE user SET bOnline = 1 WHERE :uuid = uuid')
         } else {
           const stmtNewUser = db.prepare(
             'INSERT INTO user ( uuid, account, bOnline ) VALUES ( :uuid, :account, 1 )',
             { ':uuid': uuid, ':account': isSet(account) ? account : `Anonymous_${+dNow}` }
           )
-          stmtNewUser.runAsync = stmtRunAsync
-          await stmtNewUser.runAsync()
+          await stmtRunAsync(stmtNewUser)
         }
 
         let userList = []
         let playlist = []
 
         const [userListRes, playlistRes] = await Promise.all([
-          db.allAsync('SELECT * FROM user'),
-          db.allAsync('SELECT * FROM media')
+          allAsync(db, 'SELECT * FROM user'),
+          allAsync(db, 'SELECT * FROM media')
         ])
 
         if (userListRes && isNotEmptyArray(userListRes.rows)) {
@@ -216,8 +204,8 @@ io.on(
         }
 
         io.emit('NEW_SUBMISSION_PROCESSED', item)
-        socket.emit('PLAYLIST_UPDATED', { playlist })
-        io.emit('USERS_LIST_UPDATED', { userList })
+        socket.emit('PLAYLIST_UPDATED', { playlist, playlistRes: JSON.stringify(playlistRes) })
+        io.emit('USERS_LIST_UPDATED', { userList, userListRes: JSON.stringify(userListRes) })
       }
     )
 
@@ -288,7 +276,7 @@ io.on(
           }
 
           let currentPlaylist = []
-          const cPlaylistRes = db.allAsync('SELECT * FROM media')
+          const cPlaylistRes = await allAsync(db, 'SELECT * FROM media')
           if (cPlaylistRes && isNotEmptyArray(cPlaylistRes.rows)) {
             currentPlaylist = cPlaylistRes.rows
           }
@@ -299,11 +287,10 @@ io.on(
               `INSERT INTO media ( ${kvcEntries.map(e => e.column).join(',')} ) VALUES ( ${kvcEntries.map(e => e.key).join(',')} )`,
               kvParams
             )
-            stmt.runAsync = stmtRunAsync
-            await stmt.runAsync()
+            await stmtRunAsync(stmt)
 
             let playlist = []
-            const playlistRes = db.allAsync('SELECT * FROM media')
+            const playlistRes = await allAsync(db, 'SELECT * FROM media')
             if (playlistRes && isNotEmptyArray(playlistRes.rows)) {
               playlist = playlistRes.rows
             }
@@ -319,20 +306,15 @@ io.on(
       async () => {
         if (userUuid) {
           const stmtMedia = db.prepare('SELECT uuid FROM media WHERE :senderUuid = senderUuid LIMIT 1', { ':senderUuid': userUuid })
-          stmtMedia.allAsync = stmtAllAsync
-          const { rows: countMediaRes } = await stmtMedia.allAsync()
+          const { rows: countMediaRes } = await stmtAllAsync(stmtMedia)
           if (countMediaRes.length) {
-            const stmtOffline = db.prepare('UPDATE user SET bOnline = 0 WHERE :uuid = uuid', { ':uuid': userUuid })
-            stmtOffline.runAsync = stmtRunAsync
-            await stmtOffline.runAsync()
+            await stmtRunAsync(db.prepare('UPDATE user SET bOnline = 0 WHERE :uuid = uuid', { ':uuid': userUuid }))
           } else {
-            const stmtDelete = db.prepare('DELETE FROM user WHERE :uuid = uuid', { ':uuid': userUuid })
-            stmtDelete.runAsync = stmtRunAsync
-            await stmtDelete.runAsync()
+            await stmtRunAsync(db.prepare('DELETE FROM user WHERE :uuid = uuid', { ':uuid': userUuid }))
           }
         }
 
-        const resOnlineUsersList = await db.allAsync('SELECT * FROM user WHERE 0 < bOnline')
+        const resOnlineUsersList = await allAsync(db, 'SELECT * FROM user WHERE 0 < bOnline')
         const { rows: userList } = resOnlineUsersList || {}
         io.emit('USERS_LIST_UPDATED', { userList })
       }

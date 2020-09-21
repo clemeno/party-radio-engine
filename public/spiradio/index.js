@@ -70,6 +70,7 @@ new window.Vue({ // eslint-disable-line no-new
     this.socket.on(
       'MENSOORE',
       ({ account, uuid }) => {
+        console.log({ received: { key: 'MENSOORE', data: { account, uuid } } })
         window.localStorage.setItem('spiradio_uuid', uuid)
         window.localStorage.setItem('spiradio_account', account)
         this.uuid = uuid
@@ -80,6 +81,7 @@ new window.Vue({ // eslint-disable-line no-new
     this.socket.on(
       'USERS_LIST_UPDATED',
       ({ userList }) => {
+        console.log({ received: { key: 'USERS_LIST_UPDATED', data: { userList } } })
         this.online.userList = userList
         this.online.uuidToAccount = userList.reduce((o, { uuid, account }) => ({ ...o, [uuid]: account }), {})
       }
@@ -112,7 +114,7 @@ new window.Vue({ // eslint-disable-line no-new
     this.socket.on(
       'PLAYLIST_UPDATED',
       ({ playlist }) => {
-        console.log({ playlist })
+        console.log({ received: { key: 'PLAYLIST_UPDATED', data: { playlist } } })
         this.flux.mediaList = playlist.map(m => {
           const senderAccount = this.online.uuidToAccount[m.senderUuid]
           return { ...m, senderAccount }
@@ -122,8 +124,10 @@ new window.Vue({ // eslint-disable-line no-new
 
     if (bNew) {
       this.socket.emit('MENSOORE', { account: this.account })
+      console.log({ sent: { key: 'MENSOORE', data: { account: this.account } } })
     } else if (isSet(this.uuid) && isSet(this.account)) {
       this.socket.emit('HAISAI', { uuid: this.uuid, account: this.account })
+      console.log({ sent: { key: 'HAISAI', data: { uuid: this.uuid, account: this.account } } })
     }
   },
   destroyed: function () {
